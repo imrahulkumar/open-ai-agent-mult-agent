@@ -21,6 +21,10 @@ setDefaultOpenAIClient(client);
 setOpenAIAPI('chat_completions'); // local servers speak Chat Completions, not the Responses API
 setTracingDisabled(true); // don't try to upload traces to OpenAI
 
+// Model served by the local server (e.g. ai/gemma4). Without this the SDK
+// falls back to its default OpenAI model, which the local server doesn't have.
+const MODEL = process.env.model;
+
 const fetchAvailablePlans = tool({
   name: 'fetch_available_plans',
   description: 'fetches the available plans for internet',
@@ -53,12 +57,14 @@ const processRefund = tool({
 
 const refundAgent = new Agent({
   name: 'Refund Agent',
+  model: MODEL,
   instructions: `You are expert in issuing refunds to the customer`,
   tools: [processRefund],
 });
 
 const salesAgent = new Agent({
   name: 'Sales Agent',
+  model: MODEL,
   instructions: `
         You are an expert sales agent for an internet broadband comapny.
         Talk to the user and help them with what they need.
@@ -79,4 +85,7 @@ async function runAgent(query = '') {
 
 runAgent(
   `I had a plan 399. I need a refund right now. my cus id is cust123 because of I am shifting to a new place`
-);
+).catch((err) => {
+  console.error(err);
+  process.exitCode = 1;
+});
